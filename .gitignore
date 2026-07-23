@@ -1,0 +1,6 @@
+/bin/
+*.exe
+.env
+kakeibo-upload-*.csv
+/backups/
+/.claude/

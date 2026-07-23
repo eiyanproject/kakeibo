@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>{{template "head" .}}</head>
+<body>
+<main class="container">
+{{template "nav" .}}
+<h1>Transactions</h1>
+<form method="get" action="/transactions">
+  <div class="grid">
+    <label>Account
+      <select name="account_id">
+        <option value="">All</option>
+        {{range .Accounts}}<option value="{{.ID}}">{{.Name}}</option>{{end}}
+      </select>
+    </label>
+    <label>Category
+      <select name="category_id">
+        <option value="">All</option>
+        {{range .Categories}}<option value="{{.ID}}">{{.Name}}</option>{{end}}
+      </select>
+    </label>
+    <label>Month <input type="month" name="month"></label>
+  </div>
+  <button type="submit">Filter</button>
+</form>
+
+<div style="overflow-x:auto">
+<table>
+<thead><tr><th>Date</th><th>Merchant</th><th>Category</th><th style="text-align:right">Amount</th></tr></thead>
+<tbody id="txn-body">
+{{$categories := .Categories}}
+{{range .Transactions}}
+  {{template "txn-row" (dict "Txn" . "Categories" $categories)}}
+{{end}}
+</tbody>
+</table>
+</div>
+</main>
+</body>
+</html>

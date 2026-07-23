@@ -1,0 +1,4 @@
+body { padding-bottom: 2rem; }
+.neg { color: var(--pico-del-color, #c0392b); }
+.pos { color: inherit; }
+canvas { max-height: 280px; }

@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: kakeibo-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: kakeibo
+      POSTGRES_PASSWORD: kakeibo
+      POSTGRES_DB: kakeibo
+    ports:
+      - "5432:5432"
+    volumes:
+      - kakeibo_pgdata:/var/lib/postgresql/data
+
+volumes:
+  kakeibo_pgdata:

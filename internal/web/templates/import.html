@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>{{template "head" .}}</head>
+<body>
+<main class="container">
+{{template "nav" .}}
+<h1>Import transactions</h1>
+<p><small>Upload a CSV export from your bank. You'll map the date/description/amount columns on the next step, and that mapping is remembered per account for next time.</small></p>
+<form hx-post="/import/preview" hx-target="#preview" hx-encoding="multipart/form-data">
+  <label>Account
+    <select name="account_id" required>
+      {{range .Accounts}}<option value="{{.ID}}">{{.Name}}</option>{{end}}
+    </select>
+  </label>
+  <label>CSV file <input type="file" name="file" accept=".csv" required></label>
+  <button type="submit">Preview</button>
+</form>
+<div id="preview"></div>
+</main>
+</body>
+</html>

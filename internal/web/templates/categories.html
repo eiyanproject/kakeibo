@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>{{template "head" .}}</head>
+<body>
+<main class="container">
+{{template "nav" .}}
+<h1>Categories</h1>
+<div style="overflow-x:auto">
+<table>
+<thead><tr><th>Name</th><th>Kind</th></tr></thead>
+<tbody>
+{{range .Categories}}<tr><td>{{.Name}}</td><td>{{.Kind}}</td></tr>{{end}}
+</tbody>
+</table>
+</div>
+<form method="post" action="/categories">
+  <div class="grid">
+    <label>Name <input type="text" name="name" required></label>
+    <label>Kind
+      <select name="kind">
+        <option value="expense">Expense</option>
+        <option value="income">Income</option>
+        <option value="transfer">Transfer</option>
+      </select>
+    </label>
+  </div>
+  <button type="submit">Add category</button>
+</form>
+
+<h4>Auto-categorization rules</h4>
+<p><small>When a merchant name contains the match text (case-insensitive), the transaction is assigned to that category automatically on import.</small></p>
+<div style="overflow-x:auto">
+<table>
+<thead><tr><th>Match text</th><th>Category</th><th>Priority</th><th></th></tr></thead>
+<tbody>
+{{$names := .CatNames}}
+{{range .Rules}}
+<tr>
+  <td>{{.MatchText}}</td>
+  <td>{{index $names .CategoryID}}</td>
+  <td>{{.Priority}}</td>
+  <td><form method="post" action="/rules/{{.ID}}/delete"><button class="secondary outline" type="submit">Delete</button></form></td>
+</tr>
+{{end}}
+</tbody>
+</table>
+</div>
+<form method="post" action="/rules">
+  <div class="grid">
+    <label>Match text (merchant contains) <input type="text" name="match_text" required></label>
+    <label>Category
+      <select name="category_id">
+        {{range .Categories}}<option value="{{.ID}}">{{.Name}}</option>{{end}}
+      </select>
+    </label>
+    <label>Priority <input type="number" name="priority" value="0"></label>
+  </div>
+  <button type="submit">Add rule</button>
+</form>
+</main>
+</body>
+</html>

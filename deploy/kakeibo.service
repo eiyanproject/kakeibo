@@ -1,0 +1,15 @@
+[Unit]
+Description=Kakeibo personal finance tracker
+After=network.target postgresql.service
+
+[Service]
+Type=simple
+User=kakeibo
+WorkingDirectory=/opt/kakeibo
+EnvironmentFile=/opt/kakeibo/.env
+ExecStart=/opt/kakeibo/kakeibo
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

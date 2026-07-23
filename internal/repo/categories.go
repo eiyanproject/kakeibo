@@ -1,0 +1,41 @@
+package repo
+
+import "context"
+
+type Category struct {
+	ID       int64
+	Name     string
+	ParentID *int64
+	Kind     string
+}
+
+func (s *Store) ListCategories(ctx context.Context) ([]Category, error) {
+	rows, err := s.Pool.Query(ctx, `SELECT id, name, parent_id, kind FROM categories ORDER BY name`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []Category
+	for rows.Next() {
+		var c Category
+		if err := rows.Scan(&c.ID, &c.Name, &c.ParentID, &c.Kind); err != nil {
+			return nil, err
+		}
+		out = append(out, c)
+	}
+	return out, rows.Err()
+}
+
+func (s *Store) CreateCategory(ctx context.Context, name, kind string, parentID *int64) (int64, error) {
+	var id int64
+	err := s.Pool.QueryRow(ctx,
+		`INSERT INTO categories (name, kind, parent_id) VALUES ($1,$2,$3) RETURNING id`,
+		name, kind, parentID).Scan(&id)
+	return id, err
+}
+
+func (s *Store) UncategorizedID(ctx context.Context) (int64, error) {
+	var id int64
+	err := s.Pool.QueryRow(ctx, `SELECT id FROM categories WHERE name='Uncategorized' LIMIT 1`).Scan(&id)
+	return id, err
+}

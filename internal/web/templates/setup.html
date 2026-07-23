@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>{{template "head" .}}</head>
+<body>
+<main class="container">
+<h1>Welcome to Kakeibo</h1>
+<p>Create your admin account to get started.</p>
+{{if .Error}}<p style="color:var(--pico-del-color,#c0392b)">{{.Error}}</p>{{end}}
+<form method="post" action="/setup">
+  <label>Username <input type="text" name="username" required autofocus></label>
+  <label>Password <input type="password" name="password" required></label>
+  <label>Confirm password <input type="password" name="confirm" required></label>
+  <button type="submit">Create account</button>
+</form>
+</main>
+</body>
+</html>

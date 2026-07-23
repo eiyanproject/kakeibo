@@ -1,0 +1,102 @@
+{{define "head"}}
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kakeibo</title>
+<link rel="stylesheet" href="/static/css/pico.min.css">
+<link rel="stylesheet" href="/static/css/app.css">
+<script src="/static/js/htmx.min.js"></script>
+<script src="/static/js/alpine.min.js" defer></script>
+{{end}}
+
+{{define "nav"}}
+<nav>
+  <ul>
+    <li><strong>Kakeibo</strong></li>
+  </ul>
+  <ul>
+    <li><a href="/">Dashboard</a></li>
+    <li><a href="/transactions">Transactions</a></li>
+    <li><a href="/accounts">Accounts</a></li>
+    <li><a href="/import">Import</a></li>
+    <li><a href="/categories">Categories</a></li>
+    <li><a href="/networth">Net Worth</a></li>
+    <li><form method="post" action="/logout" style="display:inline"><button class="secondary outline" type="submit">Logout</button></form></li>
+  </ul>
+</nav>
+{{end}}
+
+{{define "txn-row"}}
+<tr id="txn-{{.Txn.ID}}">
+  <td>{{.Txn.TxnDate.Format "2006-01-02"}}</td>
+  <td>{{.Txn.MerchantRaw}}</td>
+  <td>
+    <form hx-post="/transactions/{{.Txn.ID}}/category" hx-trigger="change" hx-target="#txn-{{.Txn.ID}}" hx-swap="outerHTML">
+      <input type="hidden" name="merchant" value="{{.Txn.MerchantRaw}}">
+      <select name="category_id">
+        {{range .Categories}}
+          <option value="{{.ID}}" {{if catSelected $.Txn.CategoryID .ID}}selected{{end}}>{{.Name}}</option>
+        {{end}}
+      </select>
+    </form>
+  </td>
+  <td style="text-align:right" class="{{if lt .Txn.AmountMinor 0}}neg{{else}}pos{{end}}">{{yen .Txn.AmountMinor}}</td>
+</tr>
+{{end}}
+
+{{define "import-preview"}}
+<form hx-post="/import/commit" hx-target="#preview">
+  <input type="hidden" name="account_id" value="{{.AccountID}}">
+  <input type="hidden" name="token" value="{{.Token}}">
+  <input type="hidden" name="filename" value="{{.Filename}}">
+  <p>File: {{.Filename}}</p>
+  <div class="grid">
+    <label>Date column
+      <select name="date_col">
+        {{$prof := .Profile}}
+        {{range .Headers}}<option value="{{.}}" {{if and $prof (eq $prof.DateCol .)}}selected{{end}}>{{.}}</option>{{end}}
+      </select>
+    </label>
+    <label>Description column
+      <select name="desc_col">
+        {{range .Headers}}<option value="{{.}}" {{if and $prof (eq $prof.DescCol .)}}selected{{end}}>{{.}}</option>{{end}}
+      </select>
+    </label>
+    <label>Amount column
+      <select name="amount_col">
+        {{range .Headers}}<option value="{{.}}" {{if and $prof (eq $prof.AmountCol .)}}selected{{end}}>{{.}}</option>{{end}}
+      </select>
+    </label>
+  </div>
+  <div class="grid">
+    <label>Date format
+      <select name="date_layout">
+        <option value="2006/01/02" {{if and $prof (eq $prof.DateLayout "2006/01/02")}}selected{{end}}>YYYY/MM/DD</option>
+        <option value="2006-01-02" {{if and $prof (eq $prof.DateLayout "2006-01-02")}}selected{{end}}>YYYY-MM-DD</option>
+        <option value="01/02/2006" {{if and $prof (eq $prof.DateLayout "01/02/2006")}}selected{{end}}>MM/DD/YYYY</option>
+        <option value="2006年01月02日" {{if and $prof (eq $prof.DateLayout "2006年01月02日")}}selected{{end}}>YYYY年MM月DD日</option>
+      </select>
+    </label>
+    <label><input type="checkbox" name="has_header" {{if not $prof}}checked{{else if $prof.HasHeader}}checked{{end}}> First row is a header</label>
+    <label><input type="checkbox" name="invert" {{if and $prof $prof.InvertAmount}}checked{{end}}> Invert amount sign (check if spends show as positive in this file)</label>
+  </div>
+  <p>Preview (first rows):</p>
+  <div style="overflow-x:auto">
+  <table>
+    <thead><tr>{{range .Headers}}<th>{{.}}</th>{{end}}</tr></thead>
+    <tbody>
+    {{range .PreviewRows}}
+      <tr>{{range .}}<td>{{.}}</td>{{end}}</tr>
+    {{end}}
+    </tbody>
+  </table>
+  </div>
+  <button type="submit">Commit import</button>
+</form>
+{{end}}
+
+{{define "import-result"}}
+<article>
+  <p>Imported {{.Inserted}} new transaction(s), skipped {{.Skipped}} duplicate(s).</p>
+  <a href="/accounts/{{.AccountID}}">View account</a> | <a href="/transactions">View transactions</a>
+</article>
+{{end}}

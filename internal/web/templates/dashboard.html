@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>{{template "head" .}}</head>
+<body>
+<main class="container">
+{{template "nav" .}}
+<h1>Dashboard</h1>
+
+<div class="grid">
+  <article>
+    <hgroup>
+      <h3>{{yen .MonthTotalMinor}}</h3>
+      <p>Spent this month</p>
+    </hgroup>
+  </article>
+  <article>
+    <hgroup>
+      <h3>{{yen .NetWorthMinor}}</h3>
+      <p>Net worth</p>
+    </hgroup>
+  </article>
+</div>
+
+<div class="grid">
+  <article>
+    <h4>Spending by category (this month)</h4>
+    <canvas id="catChart"></canvas>
+  </article>
+  <article>
+    <h4>Net worth (12 months)</h4>
+    <canvas id="netWorthChart"></canvas>
+  </article>
+</div>
+
+<h4>Recent transactions</h4>
+<div style="overflow-x:auto">
+<table>
+  <thead><tr><th>Date</th><th>Merchant</th><th>Category</th><th style="text-align:right">Amount</th></tr></thead>
+  <tbody>
+  {{range .RecentTransactions}}
+    <tr>
+      <td>{{.TxnDate.Format "2006-01-02"}}</td>
+      <td>{{.MerchantRaw}}</td>
+      <td>{{.CategoryName}}</td>
+      <td style="text-align:right" class="{{if lt .AmountMinor 0}}neg{{else}}pos{{end}}">{{yen .AmountMinor}}</td>
+    </tr>
+  {{end}}
+  </tbody>
+</table>
+</div>
+
+<script src="/static/js/chart.min.js"></script>
+<script>
+  new Chart(document.getElementById('catChart'), {
+    type: 'doughnut',
+    data: { labels: {{.CategoryLabelsJSON}}, datasets: [{ data: {{.CategoryDataJSON}} }] }
+  });
+  new Chart(document.getElementById('netWorthChart'), {
+    type: 'line',
+    data: { labels: {{.NetWorthLabelsJSON}}, datasets: [{ label: 'Net worth', data: {{.NetWorthDataJSON}} }] }
+  });
+</script>
+</main>
+</body>
+</html>
