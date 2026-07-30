@@ -61,7 +61,11 @@ func (h *Handlers) TransactionUpdateCategory(w http.ResponseWriter, r *http.Requ
 	}
 	if r.FormValue("create_rule") == "on" {
 		if merchant := r.FormValue("merchant"); merchant != "" {
-			_, _ = h.Store.CreateRule(r.Context(), catID, merchant, 0)
+			if _, err := h.Store.CreateRule(r.Context(), catID, merchant, 0); err == nil {
+				if uncategorized, err := h.Store.UncategorizedID(r.Context()); err == nil {
+					_, _ = h.Store.ApplyRuleToUncategorized(r.Context(), catID, uncategorized, merchant)
+				}
+			}
 		}
 	}
 

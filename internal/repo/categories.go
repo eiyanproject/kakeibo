@@ -1,6 +1,11 @@
 package repo
 
-import "context"
+import (
+	"context"
+	"errors"
+
+	"github.com/jackc/pgx/v5"
+)
 
 type Category struct {
 	ID       int64
@@ -32,6 +37,20 @@ func (s *Store) CreateCategory(ctx context.Context, name, kind string, parentID 
 		`INSERT INTO categories (name, kind, parent_id) VALUES ($1,$2,$3) RETURNING id`,
 		name, kind, parentID).Scan(&id)
 	return id, err
+}
+
+func (s *Store) GetCategory(ctx context.Context, id int64) (*Category, error) {
+	var c Category
+	err := s.Pool.QueryRow(ctx,
+		`SELECT id, name, parent_id, kind FROM categories WHERE id=$1`, id,
+	).Scan(&c.ID, &c.Name, &c.ParentID, &c.Kind)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, ErrNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &c, nil
 }
 
 func (s *Store) UncategorizedID(ctx context.Context) (int64, error) {

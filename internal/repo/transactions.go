@@ -123,19 +123,66 @@ func (s *Store) UpdateTransactionNote(ctx context.Context, id int64, note string
 	return err
 }
 
+// LatestTransactionMonth returns the first-of-month date for the most recent transaction,
+// so callers can fall back to it when the current calendar month has no data.
+func (s *Store) LatestTransactionMonth(ctx context.Context) (time.Time, bool, error) {
+	var t *time.Time
+	err := s.Pool.QueryRow(ctx, `SELECT date_trunc('month', max(txn_date))::date FROM transactions`).Scan(&t)
+	if err != nil {
+		return time.Time{}, false, err
+	}
+	if t == nil {
+		return time.Time{}, false, nil
+	}
+	return *t, true, nil
+}
+
+type MonthTotal struct {
+	Month      time.Time
+	TotalMinor int64
+}
+
+// SpendByMonth sums outgoing (negative) transactions in [from, to], grouped by calendar month.
+// Months with no spending are simply absent from the result — callers that need a fixed-length
+// series (e.g. every month in a 12-month window) should fill in zeros themselves.
+func (s *Store) SpendByMonth(ctx context.Context, from, to time.Time) ([]MonthTotal, error) {
+	rows, err := s.Pool.Query(ctx,
+		`SELECT date_trunc('month', txn_date)::date as m, SUM(-amount_minor) as total
+         FROM transactions
+         WHERE txn_date BETWEEN $1 AND $2 AND amount_minor < 0
+         GROUP BY m ORDER BY m`,
+		from, to)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []MonthTotal
+	for rows.Next() {
+		var m MonthTotal
+		if err := rows.Scan(&m.Month, &m.TotalMinor); err != nil {
+			return nil, err
+		}
+		out = append(out, m)
+	}
+	return out, rows.Err()
+}
+
 type CategoryTotal struct {
+	CategoryID   int64
 	CategoryName string
 	TotalMinor   int64
 }
 
 // SpendByCategory sums outgoing (negative) transactions in [from, to] as positive spend totals per category.
-func (s *Store) SpendByCategory(ctx context.Context, from, to time.Time) ([]CategoryTotal, error) {
+// Transactions with no category assigned are grouped under uncategorizedID so every row has a real,
+// linkable category id.
+func (s *Store) SpendByCategory(ctx context.Context, from, to time.Time, uncategorizedID int64) ([]CategoryTotal, error) {
 	rows, err := s.Pool.Query(ctx,
-		`SELECT COALESCE(c.name,'Uncategorized') as name, SUM(-t.amount_minor) as total
+		`SELECT COALESCE(c.id, $3) as cat_id, COALESCE(c.name,'Uncategorized') as name, SUM(-t.amount_minor) as total
          FROM transactions t LEFT JOIN categories c ON c.id=t.category_id
          WHERE t.txn_date BETWEEN $1 AND $2 AND t.amount_minor < 0
-         GROUP BY name ORDER BY total DESC`,
-		from, to)
+         GROUP BY cat_id, name ORDER BY total DESC`,
+		from, to, uncategorizedID)
 	if err != nil {
 		return nil, err
 	}
@@ -143,7 +190,7 @@ func (s *Store) SpendByCategory(ctx context.Context, from, to time.Time) ([]Cate
 	var out []CategoryTotal
 	for rows.Next() {
 		var c CategoryTotal
-		if err := rows.Scan(&c.CategoryName, &c.TotalMinor); err != nil {
+		if err := rows.Scan(&c.CategoryID, &c.CategoryName, &c.TotalMinor); err != nil {
 			return nil, err
 		}
 		out = append(out, c)

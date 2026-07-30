@@ -41,11 +41,10 @@ func NewRouter(store *repo.Store, cfg config.Config) http.Handler {
 	protected.HandleFunc("POST /import/commit", h.ImportCommit)
 
 	protected.HandleFunc("GET /categories", h.CategoriesList)
+	protected.HandleFunc("GET /categories/{id}", h.CategoryDetail)
 	protected.HandleFunc("POST /categories", h.CategoryCreate)
 	protected.HandleFunc("POST /rules", h.RuleCreate)
 	protected.HandleFunc("POST /rules/{id}/delete", h.RuleDelete)
-
-	protected.HandleFunc("GET /networth", h.NetWorth)
 
 	mux.Handle("/", auth.RequireAuth(store)(protected))
 

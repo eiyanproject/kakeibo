@@ -5,17 +5,27 @@
 <main class="container">
 {{template "nav" .}}
 <h1>Import transactions</h1>
-<p><small>Upload a CSV export from your bank. You'll map the date/description/amount columns on the next step, and that mapping is remembered per account for next time.</small></p>
-<form hx-post="/import/preview" hx-target="#preview" hx-encoding="multipart/form-data">
-  <label>Account
-    <select name="account_id" required>
-      {{range .Accounts}}<option value="{{.ID}}">{{.Name}}</option>{{end}}
-    </select>
-  </label>
-  <label>CSV file <input type="file" name="file" accept=".csv" required></label>
-  <button type="submit">Preview</button>
-</form>
+{{if not .Accounts}}
+<article>
+  <p>You don't have any accounts yet — create one first, then come back here to import.</p>
+  <a href="/accounts" role="button">Create an account</a>
+</article>
+{{else}}
+<article>
+  <p><small>Upload a CSV export from your bank, or a meisai-style PDF statement. You'll map the date/description/amount columns on the next step, and that mapping is remembered per account for next time.</small></p>
+  <form hx-post="/import/preview" hx-target="#preview" hx-encoding="multipart/form-data">
+    <label>Account
+      <select name="account_id" required>
+        <option value="" selected disabled>Select an account&hellip;</option>
+        {{range .Accounts}}<option value="{{.ID}}">{{.Name}}</option>{{end}}
+      </select>
+    </label>
+    <label>CSV or PDF file <input type="file" name="file" accept=".csv,.pdf" required></label>
+    <button type="submit">Preview</button>
+  </form>
+</article>
 <div id="preview"></div>
+{{end}}
 </main>
 </body>
 </html>

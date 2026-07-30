@@ -25,13 +25,32 @@ func (h *Handlers) ImportForm(w http.ResponseWriter, r *http.Request) {
 }
 
 func tempUploadPath(token string) string {
-	return filepath.Join(os.TempDir(), "kakeibo-upload-"+token+".csv")
+	return filepath.Join(os.TempDir(), "kakeibo-upload-"+token)
 }
 
 func randomToken() string {
 	b := make([]byte, 16)
 	_, _ = crand.Read(b)
 	return hex.EncodeToString(b)
+}
+
+// readImportFile dispatches to the PDF or CSV reader based on the file's actual content
+// (not its extension or declared content-type), so uploads are read strictly by what they are.
+func readImportFile(path string) (headers []string, rows [][]string, err error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, nil, err
+	}
+	defer f.Close()
+	magic := make([]byte, 5)
+	n, _ := f.Read(magic)
+	if _, err := f.Seek(0, io.SeekStart); err != nil {
+		return nil, nil, err
+	}
+	if n >= 5 && string(magic) == "%PDF-" {
+		return importer.ReadPDF(f)
+	}
+	return importer.ReadCSV(f)
 }
 
 func (h *Handlers) ImportPreview(w http.ResponseWriter, r *http.Request) {
@@ -46,7 +65,7 @@ func (h *Handlers) ImportPreview(w http.ResponseWriter, r *http.Request) {
 	}
 	file, header, err := r.FormFile("file")
 	if err != nil {
-		http.Error(w, "choose a CSV file", http.StatusBadRequest)
+		http.Error(w, "choose a CSV or PDF file", http.StatusBadRequest)
 		return
 	}
 	defer file.Close()
@@ -64,15 +83,9 @@ func (h *Handlers) ImportPreview(w http.ResponseWriter, r *http.Request) {
 	}
 	dst.Close()
 
-	f, err := os.Open(tempUploadPath(token))
+	headers, rows, err := readImportFile(tempUploadPath(token))
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	defer f.Close()
-	headers, rows, err := importer.ReadCSV(f)
-	if err != nil {
-		http.Error(w, "could not parse CSV: "+err.Error(), http.StatusBadRequest)
+		http.Error(w, "could not parse file: "+err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -116,15 +129,13 @@ func (h *Handlers) ImportCommit(w http.ResponseWriter, r *http.Request) {
 	}
 
 	path := tempUploadPath(token)
-	f, err := os.Open(path)
-	if err != nil {
+	if _, err := os.Stat(path); err != nil {
 		http.Error(w, "upload expired, please re-upload the file", http.StatusBadRequest)
 		return
 	}
-	defer f.Close()
 	defer os.Remove(path)
 
-	headers, rows, err := importer.ReadCSV(f)
+	headers, rows, err := readImportFile(path)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return

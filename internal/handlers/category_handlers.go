@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"kakeibo/internal/repo"
 	"kakeibo/internal/web"
 )
 
@@ -27,6 +28,40 @@ func (h *Handlers) CategoriesList(w http.ResponseWriter, r *http.Request) {
 		"Categories": cats,
 		"Rules":      rules,
 		"CatNames":   names,
+	})
+}
+
+func (h *Handlers) CategoryDetail(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+	cat, err := h.Store.GetCategory(ctx, id)
+	if err == repo.ErrNotFound {
+		http.NotFound(w, r)
+		return
+	}
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	txns, err := h.Store.ListTransactions(ctx, repo.TransactionFilter{CategoryID: &id, Limit: 200})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	var totalMinor int64
+	for _, t := range txns {
+		if t.AmountMinor < 0 {
+			totalMinor += -t.AmountMinor
+		}
+	}
+	web.Render(w, "category_detail.html", map[string]any{
+		"Category":     cat,
+		"TotalMinor":   totalMinor,
+		"Transactions": txns,
 	})
 }
 

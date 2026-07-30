@@ -1,8 +1,8 @@
 # Kakeibo (家計簿)
 
-A self-hosted personal finance tracker: import bank CSV statements, auto-categorize
-spending, and track net worth across accounts. Go backend, PostgreSQL, server-rendered
-HTML with htmx — no JS build step, works fine from a phone browser.
+A self-hosted personal finance tracker: import bank CSV/PDF statements and
+auto-categorize spending. Go backend, PostgreSQL, server-rendered HTML with htmx —
+no JS build step, works fine from a phone browser.
 
 ## Local development
 
@@ -19,13 +19,16 @@ HTML with htmx — no JS build step, works fine from a phone browser.
 
 ## Importing a statement
 
-Go to **Import**, pick the account, upload the CSV, then map which columns hold the
-date / description / amount. The mapping is remembered per account, so re-importing
-next month's statement is a one-click "Preview" → "Commit". Re-uploading the same
-file is safe — duplicate rows (same account, date, merchant, amount) are skipped.
+Go to **Import**, pick the account, upload a CSV or PDF statement, then map which
+columns hold the date / description / amount. The mapping is remembered per account,
+so re-importing next month's statement is a one-click "Preview" → "Commit".
+Re-uploading the same file is safe — duplicate rows (same account, date, merchant,
+amount) are skipped.
 
-If your bank only offers PDF exports, convert to CSV first (many banks also offer a
-CSV/Excel download alongside the PDF — check your online banking export options).
+PDF import currently targets Yucho Bank ("ゆうちょ銀行") meisai-style credit card
+statements (`ご利用明細書`) and requires `pdftotext` (from `poppler-utils`) to be
+installed on the host — `pacman -S poppler` / `apt install poppler-utils`. Files are
+read strictly by content (a real `%PDF-` header), not by filename.
 
 ## Categorization
 
@@ -34,15 +37,33 @@ name contains some text (case-insensitive), it's auto-assigned to that category 
 import. You can also fix a category inline from the Transactions page — check
 "create rule from this" (via the merchant field) to turn that fix into a future rule.
 
-## Net worth & accounts
+## Accounts
 
-Each account is `checking`, `credit`, `cash`, `investment`, or `other`. `credit`
-accounts count as a liability (subtracted from net worth); everything else counts as
-an asset. Accounts fed by CSV imports get their balance from opening balance + all
+Each account is `checking`, `credit`, `cash`, `investment`, or `other` (a display
+label). Accounts fed by CSV/PDF imports get their balance from opening balance + all
 transactions. Accounts without a transaction feed (e.g. investments) can instead get
 periodic manual **balance snapshots** from the account detail page.
 
 ## Deploying to a Proxmox LXC
+
+One command, run as root inside a Debian/Ubuntu-based LXC (installs Go, PostgreSQL,
+poppler-utils, builds the binary, sets up the database, and installs+starts the
+systemd service):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/eiyanproject/kakeibo/master/scripts/install.sh | bash
+```
+
+Re-running the same command later updates an existing install (`git pull`, rebuild,
+restart). Override the generated DB password with `KAKEIBO_DB_PASSWORD=...` prefixed
+before the command above.
+
+To reach it from your phone: either connect via Tailscale/WireGuard to the LXC's LAN,
+or put a reverse proxy (Caddy is simplest — automatic HTTPS) in front and set
+`SESSION_SECURE=true` in `/opt/kakeibo/.env` so session cookies require HTTPS.
+
+<details>
+<summary>Manual install (if you'd rather not pipe a script into bash)</summary>
 
 1. Build a Linux binary (cross-compile from Windows):
    ```
@@ -58,9 +79,7 @@ periodic manual **balance snapshots** from the account detail page.
    sudo systemctl daemon-reload
    sudo systemctl enable --now kakeibo
    ```
-5. To reach it from your phone: either connect via Tailscale/WireGuard to the LXC's
-   LAN, or put a reverse proxy (Caddy is simplest — automatic HTTPS) in front and set
-   `SESSION_SECURE=true` in `.env` so session cookies require HTTPS.
+</details>
 
 ## Backup & migration
 

@@ -20,10 +20,6 @@ type Account struct {
 	CreatedAt           time.Time
 }
 
-func (a Account) IsLiability() bool {
-	return a.AccountType == "credit"
-}
-
 func (s *Store) CreateAccount(ctx context.Context, a Account) (int64, error) {
 	var id int64
 	err := s.Pool.QueryRow(ctx,
