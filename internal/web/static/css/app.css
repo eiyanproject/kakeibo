@@ -21,6 +21,33 @@ nav strong { font-size: 1.15rem; }
 /* Narrow, non-stacking filter/picker forms (month picker, single-field lookups) */
 .field-sm { max-width: 220px; margin: 0; }
 
+/* A tidy group of labeled filter controls (e.g. account + month) that stay together as
+   one unit — either side by side, or as a group wrapping onto its own row — instead of
+   each control stacking independently and looking like two orphaned boxes. */
+.filter-bar {
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+.filter-bar .field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+.filter-bar label {
+  margin: 0;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--pico-muted-color);
+}
+.filter-bar select,
+.filter-bar input {
+  margin: 0;
+  min-width: 170px;
+}
+
 /* Page title with an inline control (e.g. a month picker) on the same row */
 .page-header {
   display: flex;

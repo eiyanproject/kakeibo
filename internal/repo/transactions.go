@@ -123,11 +123,20 @@ func (s *Store) UpdateTransactionNote(ctx context.Context, id int64, note string
 	return err
 }
 
-// LatestTransactionMonth returns the first-of-month date for the most recent transaction,
-// so callers can fall back to it when the current calendar month has no data.
-func (s *Store) LatestTransactionMonth(ctx context.Context) (time.Time, bool, error) {
+// LatestTransactionMonth returns the first-of-month date for the most recent transaction
+// that actually counts as spend (amount_minor < 0), so callers can fall back to it when
+// the current calendar month has no data. Restricting to spend rows matters: a stray
+// non-spend row (e.g. left over from before a sign-convention fix) in a later month must
+// not shadow real spend data sitting in an earlier month.
+func (s *Store) LatestTransactionMonth(ctx context.Context, accountID *int64) (time.Time, bool, error) {
+	q := `SELECT date_trunc('month', max(txn_date))::date FROM transactions WHERE amount_minor < 0`
+	args := []any{}
+	if accountID != nil {
+		args = append(args, *accountID)
+		q += fmt.Sprintf(" AND account_id = $%d", len(args))
+	}
 	var t *time.Time
-	err := s.Pool.QueryRow(ctx, `SELECT date_trunc('month', max(txn_date))::date FROM transactions`).Scan(&t)
+	err := s.Pool.QueryRow(ctx, q, args...).Scan(&t)
 	if err != nil {
 		return time.Time{}, false, err
 	}

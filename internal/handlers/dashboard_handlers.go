@@ -49,7 +49,7 @@ func (h *Handlers) Dashboard(w http.ResponseWriter, r *http.Request) {
 		// No spending in the current calendar month (e.g. a historical statement was just
 		// imported) — fall back to the most recent month that actually has transactions.
 		// Only applies when the user hasn't explicitly picked a month to view.
-		if latest, ok, err := h.Store.LatestTransactionMonth(ctx); err == nil && ok {
+		if latest, ok, err := h.Store.LatestTransactionMonth(ctx, accountID); err == nil && ok {
 			monthStart = latest
 			cats, err = h.Store.SpendByCategory(ctx, monthStart, monthStart.AddDate(0, 1, -1), uncategorized, accountID)
 			if err != nil {

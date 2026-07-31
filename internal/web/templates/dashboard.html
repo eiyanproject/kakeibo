@@ -6,12 +6,18 @@
 {{template "nav" .}}
 <div class="page-header">
   <h1>Dashboard</h1>
-  <form method="get" action="/" style="display:flex;gap:1rem;flex-wrap:wrap">
-    <select name="account_id" onchange="this.form.submit()" aria-label="Account">
-      <option value="" {{if not .SelectedAccountID}}selected{{end}}>All accounts</option>
-      {{range .Accounts}}<option value="{{.ID}}" {{if eq $.SelectedAccountID .ID}}selected{{end}}>{{.Name}}</option>{{end}}
-    </select>
-    <input type="month" name="month" class="field-sm" value="{{.MonthValue}}" onchange="this.form.submit()" aria-label="Month">
+  <form method="get" action="/" class="filter-bar">
+    <div class="field">
+      <label for="account_id">Account</label>
+      <select id="account_id" name="account_id" onchange="this.form.submit()">
+        <option value="" {{if not .SelectedAccountID}}selected{{end}}>All accounts</option>
+        {{range .Accounts}}<option value="{{.ID}}" {{if eq $.SelectedAccountID .ID}}selected{{end}}>{{.Name}}</option>{{end}}
+      </select>
+    </div>
+    <div class="field">
+      <label for="dash-month">Month</label>
+      <input type="month" id="dash-month" name="month" value="{{.MonthValue}}" onchange="this.form.submit()">
+    </div>
   </form>
 </div>
 
