@@ -43,6 +43,9 @@ if ! command -v go >/dev/null 2>&1 || [ "$(go version | awk '{print $3}')" != "g
 fi
 
 echo "==> Fetching kakeibo"
+# The install dir ends up owned by $SERVICE_USER after the first run (see chown below),
+# so git run as root on a later re-run refuses to touch it without this exception.
+git config --global --add safe.directory "$INSTALL_DIR"
 if [ -d "$INSTALL_DIR/.git" ]; then
   git -C "$INSTALL_DIR" pull --ff-only
 else
