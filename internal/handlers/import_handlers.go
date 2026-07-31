@@ -182,8 +182,11 @@ func (h *Handlers) ImportCommit(w http.ResponseWriter, r *http.Request) {
 		DescCol:    r.FormValue("desc_col"),
 		AmountCol:  r.FormValue("amount_col"),
 		DateLayout: r.FormValue("date_layout"),
-		Invert:     r.FormValue("invert") == "on",
-		HasHeader:  r.FormValue("has_header") == "on",
+		// This app only tracks spending, and every supported source (CSV exports,
+		// meisai PDFs) represents a purchase as a positive number — always flip the
+		// sign so spend is stored negative, matching the app's convention.
+		Invert:    true,
+		HasHeader: r.FormValue("has_header") == "on",
 	}
 
 	path := tempUploadPath(token)

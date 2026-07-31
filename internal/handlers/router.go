@@ -29,7 +29,6 @@ func NewRouter(store *repo.Store, cfg config.Config) http.Handler {
 	protected.HandleFunc("POST /accounts", h.AccountCreate)
 	protected.HandleFunc("GET /accounts/{id}", h.AccountDetail)
 	protected.HandleFunc("POST /accounts/{id}/archive", h.AccountArchive)
-	protected.HandleFunc("POST /accounts/{id}/snapshot", h.AccountAddSnapshot)
 
 	protected.HandleFunc("GET /transactions", h.TransactionsList)
 	protected.HandleFunc("POST /transactions/{id}/category", h.TransactionUpdateCategory)

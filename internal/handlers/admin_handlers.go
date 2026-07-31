@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
-	"time"
 
 	"github.com/jackc/pgx/v5/pgconn"
 
@@ -28,21 +27,11 @@ func (h *Handlers) Admin(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	now := time.Now()
-	var accountViews []accountView
-	for _, a := range accounts {
-		bal, err := h.Store.AccountBalance(ctx, a.ID, &now)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		accountViews = append(accountViews, accountView{Account: a, BalanceMinor: bal})
-	}
 
 	web.Render(w, "admin.html", map[string]any{
 		"Me":       me,
 		"Users":    users,
-		"Accounts": accountViews,
+		"Accounts": accounts,
 		"Error":    r.URL.Query().Get("error"),
 	})
 }

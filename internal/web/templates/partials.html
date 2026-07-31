@@ -60,7 +60,6 @@
   <div class="grid">
     {{$prof := .Profile}}
     <label><input type="checkbox" name="has_header" {{if not $prof}}checked{{else if $prof.HasHeader}}checked{{end}}> First row is a header</label>
-    <label><input type="checkbox" name="invert" {{if and $prof $prof.InvertAmount}}checked{{end}}> Invert amount sign (check if spends show as positive in this file)</label>
   </div>
   <p>Preview (first rows):</p>
   <div style="overflow-x:auto">

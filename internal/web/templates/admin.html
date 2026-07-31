@@ -11,14 +11,13 @@
   <h4>Financial accounts</h4>
   <div style="overflow-x:auto">
   <table>
-  <thead><tr><th>Name</th><th>Type</th><th>Institution</th><th style="text-align:right">Balance</th><th></th></tr></thead>
+  <thead><tr><th>Name</th><th>Type</th><th>Institution</th><th></th></tr></thead>
   <tbody>
   {{range .Accounts}}
   <tr>
     <td><a href="/accounts/{{.ID}}">{{.Name}}</a></td>
     <td>{{.AccountType}}</td>
     <td>{{.Institution}}</td>
-    <td style="text-align:right">{{yen .BalanceMinor}}</td>
     <td><form method="post" action="/accounts/{{.ID}}/archive"><button class="secondary outline" type="submit">Archive</button></form></td>
   </tr>
   {{end}}
@@ -41,7 +40,6 @@
         </select>
       </label>
       <label>Currency <input type="text" name="currency" value="JPY"></label>
-      <label>Opening balance <input type="number" step="0.01" name="opening_balance" value="0"></label>
     </div>
     <button type="submit">Add account</button>
   </form>
