@@ -145,13 +145,18 @@ type MonthTotal struct {
 // SpendByMonth sums outgoing (negative) transactions in [from, to], grouped by calendar month.
 // Months with no spending are simply absent from the result — callers that need a fixed-length
 // series (e.g. every month in a 12-month window) should fill in zeros themselves.
-func (s *Store) SpendByMonth(ctx context.Context, from, to time.Time) ([]MonthTotal, error) {
-	rows, err := s.Pool.Query(ctx,
-		`SELECT date_trunc('month', txn_date)::date as m, SUM(-amount_minor) as total
+// accountID narrows to a single account; nil aggregates across all accounts.
+func (s *Store) SpendByMonth(ctx context.Context, from, to time.Time, accountID *int64) ([]MonthTotal, error) {
+	q := `SELECT date_trunc('month', txn_date)::date as m, SUM(-amount_minor) as total
          FROM transactions
-         WHERE txn_date BETWEEN $1 AND $2 AND amount_minor < 0
-         GROUP BY m ORDER BY m`,
-		from, to)
+         WHERE txn_date BETWEEN $1 AND $2 AND amount_minor < 0`
+	args := []any{from, to}
+	if accountID != nil {
+		args = append(args, *accountID)
+		q += fmt.Sprintf(" AND account_id = $%d", len(args))
+	}
+	q += ` GROUP BY m ORDER BY m`
+	rows, err := s.Pool.Query(ctx, q, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -175,14 +180,18 @@ type CategoryTotal struct {
 
 // SpendByCategory sums outgoing (negative) transactions in [from, to] as positive spend totals per category.
 // Transactions with no category assigned are grouped under uncategorizedID so every row has a real,
-// linkable category id.
-func (s *Store) SpendByCategory(ctx context.Context, from, to time.Time, uncategorizedID int64) ([]CategoryTotal, error) {
-	rows, err := s.Pool.Query(ctx,
-		`SELECT COALESCE(c.id, $3) as cat_id, COALESCE(c.name,'Uncategorized') as name, SUM(-t.amount_minor) as total
+// linkable category id. accountID narrows to a single account; nil aggregates across all accounts.
+func (s *Store) SpendByCategory(ctx context.Context, from, to time.Time, uncategorizedID int64, accountID *int64) ([]CategoryTotal, error) {
+	args := []any{from, to, uncategorizedID}
+	q := `SELECT COALESCE(c.id, $3) as cat_id, COALESCE(c.name,'Uncategorized') as name, SUM(-t.amount_minor) as total
          FROM transactions t LEFT JOIN categories c ON c.id=t.category_id
-         WHERE t.txn_date BETWEEN $1 AND $2 AND t.amount_minor < 0
-         GROUP BY cat_id, name ORDER BY total DESC`,
-		from, to, uncategorizedID)
+         WHERE t.txn_date BETWEEN $1 AND $2 AND t.amount_minor < 0`
+	if accountID != nil {
+		args = append(args, *accountID)
+		q += fmt.Sprintf(" AND t.account_id = $%d", len(args))
+	}
+	q += ` GROUP BY cat_id, name ORDER BY total DESC`
+	rows, err := s.Pool.Query(ctx, q, args...)
 	if err != nil {
 		return nil, err
 	}

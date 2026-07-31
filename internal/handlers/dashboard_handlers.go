@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"strconv"
 	"time"
 
 	"kakeibo/internal/repo"
@@ -19,6 +20,18 @@ func (h *Handlers) Dashboard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var accountID *int64
+	if v := r.URL.Query().Get("account_id"); v != "" {
+		if id, err := strconv.ParseInt(v, 10, 64); err == nil {
+			accountID = &id
+		}
+	}
+	accounts, err := h.Store.ListAccounts(ctx, false)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	explicitMonth := false
 	if v := r.URL.Query().Get("month"); v != "" {
 		if t, err := time.Parse("2006-01", v); err == nil {
@@ -27,7 +40,7 @@ func (h *Handlers) Dashboard(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	cats, err := h.Store.SpendByCategory(ctx, monthStart, monthStart.AddDate(0, 1, -1), uncategorized)
+	cats, err := h.Store.SpendByCategory(ctx, monthStart, monthStart.AddDate(0, 1, -1), uncategorized, accountID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -38,7 +51,7 @@ func (h *Handlers) Dashboard(w http.ResponseWriter, r *http.Request) {
 		// Only applies when the user hasn't explicitly picked a month to view.
 		if latest, ok, err := h.Store.LatestTransactionMonth(ctx); err == nil && ok {
 			monthStart = latest
-			cats, err = h.Store.SpendByCategory(ctx, monthStart, monthStart.AddDate(0, 1, -1), uncategorized)
+			cats, err = h.Store.SpendByCategory(ctx, monthStart, monthStart.AddDate(0, 1, -1), uncategorized, accountID)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
@@ -56,7 +69,7 @@ func (h *Handlers) Dashboard(w http.ResponseWriter, r *http.Request) {
 		ids = append(ids, c.CategoryID)
 	}
 
-	recent, err := h.Store.ListTransactions(ctx, repo.TransactionFilter{Limit: 10})
+	recent, err := h.Store.ListTransactions(ctx, repo.TransactionFilter{Limit: 10, AccountID: accountID})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -65,7 +78,7 @@ func (h *Handlers) Dashboard(w http.ResponseWriter, r *http.Request) {
 	// Trailing 12 calendar months ending this month, independent of the month picker above.
 	currentMonth := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC)
 	yearStart := currentMonth.AddDate(0, -11, 0)
-	monthTotals, err := h.Store.SpendByMonth(ctx, yearStart, currentMonth.AddDate(0, 1, -1))
+	monthTotals, err := h.Store.SpendByMonth(ctx, yearStart, currentMonth.AddDate(0, 1, -1), accountID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -84,10 +97,17 @@ func (h *Handlers) Dashboard(w http.ResponseWriter, r *http.Request) {
 		yearTotal += v
 	}
 
+	var selectedAccountID int64
+	if accountID != nil {
+		selectedAccountID = *accountID
+	}
+
 	web.Render(w, "dashboard.html", map[string]any{
 		"MonthTotalMinor":    monthTotal,
 		"MonthValue":         monthStart.Format("2006-01"),
 		"PeriodLabel":        monthStart.Format("January 2006"),
+		"Accounts":           accounts,
+		"SelectedAccountID":  selectedAccountID,
 		"RecentTransactions": recent,
 		"CategoryLabelsJSON": toJS(labels),
 		"CategoryDataJSON":   toJS(data),
