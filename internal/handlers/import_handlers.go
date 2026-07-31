@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -14,6 +15,59 @@ import (
 	"kakeibo/internal/repo"
 	"kakeibo/internal/web"
 )
+
+var (
+	dateHeaderRe   = regexp.MustCompile(`(?i)date|日付`)
+	amountHeaderRe = regexp.MustCompile(`(?i)amount|price|金額`)
+)
+
+// guessColumns picks which header holds the date/description/amount, preferring the
+// account's saved mapping (if its columns still exist in this file), falling back to
+// matching header names against common date/amount keywords, and finally to a
+// positional guess so every file gets a usable mapping without asking the user.
+func guessColumns(headers []string, prof *repo.ImportProfile) (dateCol, descCol, amountCol string) {
+	has := func(name string) bool {
+		for _, h := range headers {
+			if h == name {
+				return true
+			}
+		}
+		return false
+	}
+	if prof != nil && has(prof.DateCol) && has(prof.DescCol) && has(prof.AmountCol) {
+		return prof.DateCol, prof.DescCol, prof.AmountCol
+	}
+
+	for _, h := range headers {
+		if dateCol == "" && dateHeaderRe.MatchString(h) {
+			dateCol = h
+		} else if amountCol == "" && amountHeaderRe.MatchString(h) {
+			amountCol = h
+		}
+	}
+	for _, h := range headers {
+		if h != dateCol && h != amountCol {
+			descCol = h
+			break
+		}
+	}
+
+	if dateCol == "" && len(headers) > 0 {
+		dateCol = headers[0]
+	}
+	if amountCol == "" && len(headers) > 0 {
+		amountCol = headers[len(headers)-1]
+	}
+	if descCol == "" {
+		for _, h := range headers {
+			if h != dateCol && h != amountCol {
+				descCol = h
+				break
+			}
+		}
+	}
+	return dateCol, descCol, amountCol
+}
 
 func (h *Handlers) ImportForm(w http.ResponseWriter, r *http.Request) {
 	accounts, err := h.Store.ListAccounts(r.Context(), false)
@@ -83,20 +137,30 @@ func (h *Handlers) ImportPreview(w http.ResponseWriter, r *http.Request) {
 	}
 	dst.Close()
 
-	headers, _, err := readImportFile(tempUploadPath(token))
+	headers, rows, err := readImportFile(tempUploadPath(token))
 	if err != nil {
 		http.Error(w, "could not parse file: "+err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	profile, _ := h.Store.GetImportProfile(r.Context(), accountID)
+	dateCol, descCol, amountCol := guessColumns(headers, profile)
+
+	preview := rows
+	if len(preview) > 6 {
+		preview = preview[:6]
+	}
 
 	web.Render(w, "import-preview", map[string]any{
-		"AccountID": accountID,
-		"Token":     token,
-		"Filename":  header.Filename,
-		"Headers":   headers,
-		"Profile":   profile,
+		"AccountID":   accountID,
+		"Token":       token,
+		"Filename":    header.Filename,
+		"Headers":     headers,
+		"PreviewRows": preview,
+		"DateCol":     dateCol,
+		"DescCol":     descCol,
+		"AmountCol":   amountCol,
+		"Profile":     profile,
 	})
 }
 

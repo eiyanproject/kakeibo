@@ -51,29 +51,27 @@
   <input type="hidden" name="account_id" value="{{.AccountID}}">
   <input type="hidden" name="token" value="{{.Token}}">
   <input type="hidden" name="filename" value="{{.Filename}}">
-  <p>File: {{.Filename}}</p>
-  <div class="grid">
-    <label>Date column
-      <select name="date_col">
-        {{$prof := .Profile}}
-        {{range .Headers}}<option value="{{.}}" {{if and $prof (eq $prof.DateCol .)}}selected{{end}}>{{.}}</option>{{end}}
-      </select>
-    </label>
-    <label>Description column
-      <select name="desc_col">
-        {{range .Headers}}<option value="{{.}}" {{if and $prof (eq $prof.DescCol .)}}selected{{end}}>{{.}}</option>{{end}}
-      </select>
-    </label>
-    <label>Amount column
-      <select name="amount_col">
-        {{range .Headers}}<option value="{{.}}" {{if and $prof (eq $prof.AmountCol .)}}selected{{end}}>{{.}}</option>{{end}}
-      </select>
-    </label>
-  </div>
+  <input type="hidden" name="date_col" value="{{.DateCol}}">
+  <input type="hidden" name="desc_col" value="{{.DescCol}}">
+  <input type="hidden" name="amount_col" value="{{.AmountCol}}">
   <input type="hidden" name="date_layout" value="2006/01/02">
+  <p>File: {{.Filename}}</p>
+  <p><small>Using <strong>{{.DateCol}}</strong> as date, <strong>{{.DescCol}}</strong> as description, <strong>{{.AmountCol}}</strong> as amount — check the preview below matches before committing.</small></p>
   <div class="grid">
+    {{$prof := .Profile}}
     <label><input type="checkbox" name="has_header" {{if not $prof}}checked{{else if $prof.HasHeader}}checked{{end}}> First row is a header</label>
     <label><input type="checkbox" name="invert" {{if and $prof $prof.InvertAmount}}checked{{end}}> Invert amount sign (check if spends show as positive in this file)</label>
+  </div>
+  <p>Preview (first rows):</p>
+  <div style="overflow-x:auto">
+  <table>
+    <thead><tr>{{range .Headers}}<th>{{.}}</th>{{end}}</tr></thead>
+    <tbody>
+    {{range .PreviewRows}}
+      <tr>{{range .}}<td>{{.}}</td>{{end}}</tr>
+    {{end}}
+    </tbody>
+  </table>
   </div>
   <button type="submit">Commit import</button>
 </form>
