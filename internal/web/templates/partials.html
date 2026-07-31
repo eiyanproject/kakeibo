@@ -16,9 +16,9 @@
   <ul>
     <li><a href="/">Dashboard</a></li>
     <li><a href="/transactions">Transactions</a></li>
-    <li><a href="/accounts">Accounts</a></li>
     <li><a href="/import">Import</a></li>
     <li><a href="/categories">Categories</a></li>
+    <li><a href="/admin">Admin</a></li>
     <li><form method="post" action="/logout" style="display:inline"><button class="secondary outline" type="submit">Logout</button></form></li>
   </ul>
 </nav>
@@ -70,28 +70,10 @@
       </select>
     </label>
   </div>
+  <input type="hidden" name="date_layout" value="2006/01/02">
   <div class="grid">
-    <label>Date format
-      <select name="date_layout">
-        <option value="2006/01/02" {{if and $prof (eq $prof.DateLayout "2006/01/02")}}selected{{end}}>YYYY/MM/DD</option>
-        <option value="2006-01-02" {{if and $prof (eq $prof.DateLayout "2006-01-02")}}selected{{end}}>YYYY-MM-DD</option>
-        <option value="01/02/2006" {{if and $prof (eq $prof.DateLayout "01/02/2006")}}selected{{end}}>MM/DD/YYYY</option>
-        <option value="2006年01月02日" {{if and $prof (eq $prof.DateLayout "2006年01月02日")}}selected{{end}}>YYYY年MM月DD日</option>
-      </select>
-    </label>
     <label><input type="checkbox" name="has_header" {{if not $prof}}checked{{else if $prof.HasHeader}}checked{{end}}> First row is a header</label>
     <label><input type="checkbox" name="invert" {{if and $prof $prof.InvertAmount}}checked{{end}}> Invert amount sign (check if spends show as positive in this file)</label>
-  </div>
-  <p>Preview (first rows):</p>
-  <div style="overflow-x:auto">
-  <table>
-    <thead><tr>{{range .Headers}}<th>{{.}}</th>{{end}}</tr></thead>
-    <tbody>
-    {{range .PreviewRows}}
-      <tr>{{range .}}<td>{{.}}</td>{{end}}</tr>
-    {{end}}
-    </tbody>
-  </table>
   </div>
   <button type="submit">Commit import</button>
 </form>

@@ -26,7 +26,6 @@ func NewRouter(store *repo.Store, cfg config.Config) http.Handler {
 	protected := http.NewServeMux()
 	protected.HandleFunc("GET /{$}", h.Dashboard)
 
-	protected.HandleFunc("GET /accounts", h.AccountsList)
 	protected.HandleFunc("POST /accounts", h.AccountCreate)
 	protected.HandleFunc("GET /accounts/{id}", h.AccountDetail)
 	protected.HandleFunc("POST /accounts/{id}/archive", h.AccountArchive)
@@ -46,7 +45,12 @@ func NewRouter(store *repo.Store, cfg config.Config) http.Handler {
 	protected.HandleFunc("POST /rules", h.RuleCreate)
 	protected.HandleFunc("POST /rules/{id}/delete", h.RuleDelete)
 
+	protected.HandleFunc("GET /admin", h.Admin)
+	protected.HandleFunc("POST /admin/credentials", h.AdminUpdateCredentials)
+	protected.HandleFunc("POST /admin/users", h.AdminCreateUser)
+	protected.HandleFunc("POST /admin/users/{id}/delete", h.AdminDeleteUser)
+
 	mux.Handle("/", auth.RequireAuth(store)(protected))
 
-	return mux
+	return withLogging(mux)
 }

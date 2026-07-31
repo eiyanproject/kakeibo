@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>{{template "head" .}}</head>
+<body>
+<main class="container">
+{{template "nav" .}}
+<h1>Admin</h1>
+{{if .Error}}<p style="color:var(--pico-del-color,#c0392b)">{{.Error}}</p>{{end}}
+
+<article>
+  <h4>Financial accounts</h4>
+  <div style="overflow-x:auto">
+  <table>
+  <thead><tr><th>Name</th><th>Type</th><th>Institution</th><th style="text-align:right">Balance</th><th></th></tr></thead>
+  <tbody>
+  {{range .Accounts}}
+  <tr>
+    <td><a href="/accounts/{{.ID}}">{{.Name}}</a></td>
+    <td>{{.AccountType}}</td>
+    <td>{{.Institution}}</td>
+    <td style="text-align:right">{{yen .BalanceMinor}}</td>
+    <td><form method="post" action="/accounts/{{.ID}}/archive"><button class="secondary outline" type="submit">Archive</button></form></td>
+  </tr>
+  {{end}}
+  </tbody>
+  </table>
+  </div>
+  <form method="post" action="/accounts">
+    <div class="grid">
+      <label>Name <input type="text" name="name" required></label>
+      <label>Institution <input type="text" name="institution"></label>
+    </div>
+    <div class="grid">
+      <label>Type
+        <select name="account_type">
+          <option value="checking">Checking</option>
+          <option value="credit">Credit</option>
+          <option value="cash">Cash</option>
+          <option value="investment">Investment</option>
+          <option value="other">Other</option>
+        </select>
+      </label>
+      <label>Currency <input type="text" name="currency" value="JPY"></label>
+      <label>Opening balance <input type="number" step="0.01" name="opening_balance" value="0"></label>
+    </div>
+    <button type="submit">Add account</button>
+  </form>
+</article>
+
+<article>
+  <h4>Users</h4>
+  <div style="overflow-x:auto">
+  <table>
+  <thead><tr><th>Username</th><th>Created</th><th></th></tr></thead>
+  <tbody>
+  {{$me := .Me}}
+  {{range .Users}}
+  <tr>
+    <td>{{.Username}}{{if eq .ID $me.ID}} <small>(you)</small>{{end}}</td>
+    <td>{{.CreatedAt.Format "2006-01-02"}}</td>
+    <td>
+      {{if ne .ID $me.ID}}
+      <form method="post" action="/admin/users/{{.ID}}/delete" onsubmit="return confirm('Delete user {{.Username}}?')">
+        <button class="secondary outline" type="submit">Delete</button>
+      </form>
+      {{end}}
+    </td>
+  </tr>
+  {{end}}
+  </tbody>
+  </table>
+  </div>
+  <form method="post" action="/admin/users">
+    <div class="grid">
+      <label>Username <input type="text" name="username" required></label>
+      <label>Password <input type="password" name="password" required></label>
+      <label>Confirm password <input type="password" name="confirm" required></label>
+    </div>
+    <button type="submit">Add user</button>
+  </form>
+</article>
+
+<article>
+  <h4>Your account</h4>
+  <p><small>Leave the password fields blank to keep your current password.</small></p>
+  <form method="post" action="/admin/credentials">
+    <label>Username <input type="text" name="username" value="{{.Me.Username}}" required></label>
+    <label>Current password <input type="password" name="current_password" required></label>
+    <div class="grid">
+      <label>New password <input type="password" name="new_password"></label>
+      <label>Confirm new password <input type="password" name="confirm_password"></label>
+    </div>
+    <button type="submit">Save</button>
+  </form>
+</article>
+</main>
+</body>
+</html>

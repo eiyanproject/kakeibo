@@ -29,6 +29,33 @@ func (s *Store) CreateUser(ctx context.Context, username, passwordHash string) (
 	return id, err
 }
 
+func (s *Store) ListUsers(ctx context.Context) ([]User, error) {
+	rows, err := s.Pool.Query(ctx, `SELECT id, username, password_hash, created_at FROM users ORDER BY username`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []User
+	for rows.Next() {
+		var u User
+		if err := rows.Scan(&u.ID, &u.Username, &u.PasswordHash, &u.CreatedAt); err != nil {
+			return nil, err
+		}
+		out = append(out, u)
+	}
+	return out, rows.Err()
+}
+
+func (s *Store) UpdateUserCredentials(ctx context.Context, id int64, username, passwordHash string) error {
+	_, err := s.Pool.Exec(ctx, `UPDATE users SET username=$1, password_hash=$2 WHERE id=$3`, username, passwordHash, id)
+	return err
+}
+
+func (s *Store) DeleteUser(ctx context.Context, id int64) error {
+	_, err := s.Pool.Exec(ctx, `DELETE FROM users WHERE id=$1`, id)
+	return err
+}
+
 func (s *Store) GetUserByUsername(ctx context.Context, username string) (*User, error) {
 	var u User
 	err := s.Pool.QueryRow(ctx,

@@ -14,26 +14,6 @@ type accountView struct {
 	BalanceMinor int64
 }
 
-func (h *Handlers) AccountsList(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	accounts, err := h.Store.ListAccounts(ctx, false)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	now := time.Now()
-	var views []accountView
-	for _, a := range accounts {
-		bal, err := h.Store.AccountBalance(ctx, a.ID, &now)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		views = append(views, accountView{Account: a, BalanceMinor: bal})
-	}
-	web.Render(w, "accounts.html", map[string]any{"Accounts": views})
-}
-
 func (h *Handlers) AccountCreate(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	name := r.FormValue("name")
@@ -54,7 +34,7 @@ func (h *Handlers) AccountCreate(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, "/accounts", http.StatusSeeOther)
+	http.Redirect(w, r, "/admin", http.StatusSeeOther)
 }
 
 func (h *Handlers) AccountDetail(w http.ResponseWriter, r *http.Request) {
@@ -103,7 +83,7 @@ func (h *Handlers) AccountArchive(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, "/accounts", http.StatusSeeOther)
+	http.Redirect(w, r, "/admin", http.StatusSeeOther)
 }
 
 func (h *Handlers) AccountAddSnapshot(w http.ResponseWriter, r *http.Request) {

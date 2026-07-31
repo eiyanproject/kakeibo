@@ -83,7 +83,7 @@ func (h *Handlers) ImportPreview(w http.ResponseWriter, r *http.Request) {
 	}
 	dst.Close()
 
-	headers, rows, err := readImportFile(tempUploadPath(token))
+	headers, _, err := readImportFile(tempUploadPath(token))
 	if err != nil {
 		http.Error(w, "could not parse file: "+err.Error(), http.StatusBadRequest)
 		return
@@ -91,18 +91,12 @@ func (h *Handlers) ImportPreview(w http.ResponseWriter, r *http.Request) {
 
 	profile, _ := h.Store.GetImportProfile(r.Context(), accountID)
 
-	preview := rows
-	if len(preview) > 6 {
-		preview = preview[:6]
-	}
-
 	web.Render(w, "import-preview", map[string]any{
-		"AccountID":   accountID,
-		"Token":       token,
-		"Filename":    header.Filename,
-		"Headers":     headers,
-		"PreviewRows": preview,
-		"Profile":     profile,
+		"AccountID": accountID,
+		"Token":     token,
+		"Filename":  header.Filename,
+		"Headers":   headers,
+		"Profile":   profile,
 	})
 }
 
