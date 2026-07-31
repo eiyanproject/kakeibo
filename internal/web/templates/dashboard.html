@@ -61,12 +61,23 @@
 
 <script src="/static/js/chart.min.js"></script>
 <script>
+  function formatYen(minor) {
+    return '¥' + Math.round(minor / 100).toLocaleString('en-US');
+  }
+
   const catIds = {{.CategoryIDsJSON}};
   new Chart(document.getElementById('catChart'), {
     type: 'pie',
     data: { labels: {{.CategoryLabelsJSON}}, datasets: [{ data: {{.CategoryDataJSON}} }] },
     options: {
       maintainAspectRatio: false,
+      plugins: {
+        tooltip: {
+          callbacks: {
+            label: (ctx) => `${ctx.label}: ${formatYen(ctx.parsed)}`
+          }
+        }
+      },
       onClick(evt, elements) {
         if (elements.length > 0) {
           window.location.href = '/categories/' + catIds[elements[0].index];
@@ -77,7 +88,24 @@
   new Chart(document.getElementById('yearChart'), {
     type: 'bar',
     data: { labels: {{.YearLabelsJSON}}, datasets: [{ label: 'Spending', data: {{.YearDataJSON}} }] },
-    options: { maintainAspectRatio: false, plugins: { legend: { display: false } } }
+    options: {
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => formatYen(ctx.parsed.y)
+          }
+        }
+      },
+      scales: {
+        y: {
+          ticks: {
+            callback: (value) => formatYen(value)
+          }
+        }
+      }
+    }
   });
 </script>
 </main>
