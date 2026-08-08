@@ -39,6 +39,13 @@
   </tbody>
   </table>
   </div>
+  <nav aria-label="Transactions pages">
+    <ul>
+      <li>{{if .HasPrev}}<a href="{{.PrevURL}}">← Newer</a>{{else}}<span>← Newer</span>{{end}}</li>
+      <li>Page {{.Page}}</li>
+      <li>{{if .HasNext}}<a href="{{.NextURL}}">Older →</a>{{else}}<span>Older →</span>{{end}}</li>
+    </ul>
+  </nav>
 </article>
 </main>
 </body>

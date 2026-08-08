@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"net/url"
 	"strconv"
 	"time"
 
@@ -9,20 +10,23 @@ import (
 	"kakeibo/internal/web"
 )
 
+const transactionsPageSize = 20
+
 func (h *Handlers) TransactionsList(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	f := repo.TransactionFilter{Limit: 200}
-	if v := r.URL.Query().Get("account_id"); v != "" {
+	q := r.URL.Query()
+	f := repo.TransactionFilter{}
+	if v := q.Get("account_id"); v != "" {
 		if id, err := strconv.ParseInt(v, 10, 64); err == nil {
 			f.AccountID = &id
 		}
 	}
-	if v := r.URL.Query().Get("category_id"); v != "" {
+	if v := q.Get("category_id"); v != "" {
 		if id, err := strconv.ParseInt(v, 10, 64); err == nil {
 			f.CategoryID = &id
 		}
 	}
-	if v := r.URL.Query().Get("month"); v != "" {
+	if v := q.Get("month"); v != "" {
 		if t, err := time.Parse("2006-01", v); err == nil {
 			from := t
 			to := t.AddDate(0, 1, -1)
@@ -30,17 +34,56 @@ func (h *Handlers) TransactionsList(w http.ResponseWriter, r *http.Request) {
 			f.To = &to
 		}
 	}
+
+	page := 1
+	if v := q.Get("page"); v != "" {
+		if p, err := strconv.Atoi(v); err == nil && p > 0 {
+			page = p
+		}
+	}
+	f.Offset = (page - 1) * transactionsPageSize
+	f.Limit = transactionsPageSize + 1 // fetch one extra row to detect a next page
+
 	txns, err := h.Store.ListTransactions(ctx, f)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	hasNext := len(txns) > transactionsPageSize
+	if hasNext {
+		txns = txns[:transactionsPageSize]
+	}
+
 	accounts, _ := h.Store.ListAccounts(ctx, false)
 	categories, _ := h.Store.ListCategories(ctx)
+
+	filterParams := func() url.Values {
+		v := url.Values{}
+		if av := q.Get("account_id"); av != "" {
+			v.Set("account_id", av)
+		}
+		if cv := q.Get("category_id"); cv != "" {
+			v.Set("category_id", cv)
+		}
+		if mv := q.Get("month"); mv != "" {
+			v.Set("month", mv)
+		}
+		return v
+	}
+	prevParams := filterParams()
+	prevParams.Set("page", strconv.Itoa(page-1))
+	nextParams := filterParams()
+	nextParams.Set("page", strconv.Itoa(page+1))
+
 	web.Render(w, "transactions.html", map[string]any{
 		"Transactions": txns,
 		"Accounts":     accounts,
 		"Categories":   categories,
+		"Page":         page,
+		"HasPrev":      page > 1,
+		"HasNext":      hasNext,
+		"PrevURL":      "/transactions?" + prevParams.Encode(),
+		"NextURL":      "/transactions?" + nextParams.Encode(),
 	})
 }
 
