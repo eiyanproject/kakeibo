@@ -18,7 +18,15 @@
     <li><a href="/transactions">Transactions</a></li>
     <li><a href="/import">Import</a></li>
     <li><a href="/categories">Categories</a></li>
-    <li><a href="/admin">Admin</a></li>
+    <li>
+      <details class="dropdown">
+        <summary>Admin</summary>
+        <ul>
+          <li><a href="/admin">Administration</a></li>
+          <li><a href="/admin/rules">Auto-categorization</a></li>
+        </ul>
+      </details>
+    </li>
     <li><form method="post" action="/logout" style="display:inline"><button class="secondary outline" type="submit">Logout</button></form></li>
   </ul>
 </nav>

@@ -39,6 +39,16 @@ func (s *Store) CreateCategory(ctx context.Context, name, kind string, parentID 
 	return id, err
 }
 
+func (s *Store) UpdateCategory(ctx context.Context, id int64, name, kind string) error {
+	_, err := s.Pool.Exec(ctx, `UPDATE categories SET name=$1, kind=$2 WHERE id=$3`, name, kind, id)
+	return err
+}
+
+func (s *Store) DeleteCategory(ctx context.Context, id int64) error {
+	_, err := s.Pool.Exec(ctx, `DELETE FROM categories WHERE id=$1`, id)
+	return err
+}
+
 func (s *Store) GetCategory(ctx context.Context, id int64) (*Category, error) {
 	var c Category
 	err := s.Pool.QueryRow(ctx,

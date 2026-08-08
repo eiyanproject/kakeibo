@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>{{template "head" .}}</head>
+<body>
+<main class="container">
+{{template "nav" .}}
+<h1>Auto-categorization</h1>
+
+<article>
+  <p><small>When a merchant name contains the match text (case-insensitive), the transaction is assigned to that category automatically on import.</small></p>
+  <div style="overflow-x:auto">
+  <table>
+  <thead><tr><th>Match text</th><th>Category</th><th>Priority</th><th></th></tr></thead>
+  <tbody>
+  {{$names := .CatNames}}
+  {{range .Rules}}
+  <tr>
+    <td>{{.MatchText}}</td>
+    <td>{{index $names .CategoryID}}</td>
+    <td>{{.Priority}}</td>
+    <td><form method="post" action="/admin/rules/{{.ID}}/delete"><button class="secondary outline" type="submit">Delete</button></form></td>
+  </tr>
+  {{end}}
+  </tbody>
+  </table>
+  </div>
+  <form method="post" action="/admin/rules">
+    <div class="grid">
+      <label>Match text (merchant contains) <input type="text" name="match_text" required></label>
+      <label>Category
+        <select name="category_id">
+          {{range .Categories}}<option value="{{.ID}}">{{.Name}}</option>{{end}}
+        </select>
+      </label>
+      <label>Priority <input type="number" name="priority" value="0"></label>
+    </div>
+    <button type="submit">Add rule</button>
+  </form>
+</article>
+</main>
+</body>
+</html>

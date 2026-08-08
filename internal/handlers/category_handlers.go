@@ -9,25 +9,13 @@ import (
 )
 
 func (h *Handlers) CategoriesList(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	cats, err := h.Store.ListCategories(ctx)
+	cats, err := h.Store.ListCategories(r.Context())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
-	}
-	rules, err := h.Store.ListRules(ctx)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	names := map[int64]string{}
-	for _, c := range cats {
-		names[c.ID] = c.Name
 	}
 	web.Render(w, "categories.html", map[string]any{
 		"Categories": cats,
-		"Rules":      rules,
-		"CatNames":   names,
 	})
 }
 
@@ -78,6 +66,59 @@ func (h *Handlers) CategoryCreate(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/categories", http.StatusSeeOther)
 }
 
+func (h *Handlers) CategoryUpdate(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+	kind := r.FormValue("kind")
+	if kind == "" {
+		kind = "expense"
+	}
+	if err := h.Store.UpdateCategory(r.Context(), id, r.FormValue("name"), kind); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	http.Redirect(w, r, "/categories", http.StatusSeeOther)
+}
+
+func (h *Handlers) CategoryDelete(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+	if err := h.Store.DeleteCategory(r.Context(), id); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	http.Redirect(w, r, "/categories", http.StatusSeeOther)
+}
+
+func (h *Handlers) AdminRules(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	cats, err := h.Store.ListCategories(ctx)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	rules, err := h.Store.ListRules(ctx)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	names := map[int64]string{}
+	for _, c := range cats {
+		names[c.ID] = c.Name
+	}
+	web.Render(w, "admin_rules.html", map[string]any{
+		"Categories": cats,
+		"Rules":      rules,
+		"CatNames":   names,
+	})
+}
+
 func (h *Handlers) RuleCreate(w http.ResponseWriter, r *http.Request) {
 	catID, err := strconv.ParseInt(r.FormValue("category_id"), 10, 64)
 	if err != nil {
@@ -89,7 +130,7 @@ func (h *Handlers) RuleCreate(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, "/categories", http.StatusSeeOther)
+	http.Redirect(w, r, "/admin/rules", http.StatusSeeOther)
 }
 
 func (h *Handlers) RuleDelete(w http.ResponseWriter, r *http.Request) {
@@ -102,5 +143,5 @@ func (h *Handlers) RuleDelete(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, "/categories", http.StatusSeeOther)
+	http.Redirect(w, r, "/admin/rules", http.StatusSeeOther)
 }
